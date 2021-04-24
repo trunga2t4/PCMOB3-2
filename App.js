@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { StatusBar } from "expo-status-bar";
 import {
   ScrollView,
+  Button,
   StyleSheet,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
@@ -9,165 +12,109 @@ import {
 } from "react-native";
 import Constants from "expo-constants";
 import * as SQLite from "expo-sqlite";
+import { createStackNavigator } from "@react-navigation/stack";
+import { NavigationContainer } from "@react-navigation/native";
+import { AntDesign } from "@expo/vector-icons";
 
-const db = SQLite.openDatabase("db.db");
+const db = SQLite.openDatabase("note.db");
 
-function Items({ done: doneHeading, onPressItem }) {
-  const [items, setItems] = React.useState(null);
-
-  React.useEffect(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        `select * from items where done = ?;`,
-        [doneHeading ? 1 : 0],
-        (_, { rows: { _array } }) => setItems(_array)
-      );
-    });
-  }, []);
-
-  const heading = doneHeading ? "Completed" : "Todo";
-
-  if (items === null || items.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionHeading}>{heading}</Text>
-      {items.map(({ id, done, value }) => (
-        <TouchableOpacity
-          key={id}
-          onPress={() => onPressItem && onPressItem(id)}
-          style={{
-            backgroundColor: done ? "#1c9963" : "#fff",
-            borderColor: "#000",
-            borderWidth: 1,
-            padding: 8,
-          }}
-        >
-          <Text style={{ color: done ? "#fff" : "#000" }}>{value}</Text>
+function HomeS({ navigation }) {
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={console.log("Hello")}>
+          <AntDesign
+            name="infocirlce"
+            size={40}
+            color="black"
+            style={styles.headerright}
+          />
         </TouchableOpacity>
-      ))}
+      ),
+    });
+  });
+
+  const [noteArray, setNoteArray] = useState([
+    { title: "Task 1", id: "1", done: false },
+    { title: "Task 2", id: "2", done: false },
+    { title: "Task 3", id: "3", done: true },
+  ]);
+
+  const Item = ({ title }) => (
+    <View style={styles.item}>
+      <Text style={styles.title}>{title}</Text>
     </View>
   );
-}
-
-export default function App() {
-  const [text, setText] = React.useState(null);
-  const [forceUpdate, forceUpdateId] = useForceUpdate();
-
-  React.useEffect(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "create table if not exists items (id integer primary key not null, done int, value text);"
-      );
-    });
-  }, []);
-
-  const add = (text) => {
-    // is text empty?
-    if (text === null || text === "") {
-      return false;
-    }
-
-    db.transaction(
-      (tx) => {
-        tx.executeSql("insert into items (done, value) values (0, ?)", [text]);
-        tx.executeSql("select * from items", [], (_, { rows }) =>
-          console.log(JSON.stringify(rows))
-        );
-      },
-      null,
-      forceUpdate
-    );
-  };
+  const renderItem = ({ item }) => <Item title={item.title} />;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>SQLite Example</Text>
-      <View style={styles.flexRow}>
-        <TextInput
-          onChangeText={(text) => setText(text)}
-          onSubmitEditing={() => {
-            add(text);
-            setText(null);
-          }}
-          placeholder="what do you need to do?"
-          style={styles.input}
-          value={text}
-        />
-      </View>
-      <ScrollView style={styles.listArea}>
-        <Items
-          key={`forceupdate-todo-${forceUpdateId}`}
-          done={false}
-          onPressItem={(id) =>
-            db.transaction(
-              (tx) => {
-                tx.executeSql(`update items set done = 1 where id = ?;`, [id]);
-              },
-              null,
-              forceUpdate
-            )
-          }
-        />
-        <Items
-          done
-          key={`forceupdate-done-${forceUpdateId}`}
-          onPressItem={(id) =>
-            db.transaction(
-              (tx) => {
-                tx.executeSql(`delete from items where id = ?;`, [id]);
-              },
-              null,
-              forceUpdate
-            )
-          }
-        />
-      </ScrollView>
+    <View style={[styles.container]}>
+      <FlatList
+        style={styles.list}
+        data={noteArray}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        numColumns={1}
+      />
+      <StatusBar style="auto" />
+      <StatusBar style="auto" />
     </View>
   );
 }
 
-function useForceUpdate() {
-  const [value, setValue] = useState(0);
-  return [() => setValue(value + 1), value];
+const Stack = createStackNavigator();
+
+export default function EventStack() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "#87CEFA",
+            height: 100,
+            borderBottomColor: "#ccc",
+            borderBottomWidth: 1,
+          },
+        }}
+      >
+        <Stack.Screen
+          name="Notes App"
+          component={HomeS}
+          options={{
+            title: "Notes App",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: 30,
+            },
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: "#98FB98",
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerright: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingRight: 20,
+  },
+  list: {
+    width: "100%",
+  },
+  title: {
+    padding: 10,
+    margin: 10,
     backgroundColor: "#fff",
-    flex: 1,
-    paddingTop: Constants.statusBarHeight,
-  },
-  heading: {
+    borderBottomColor: "#999",
+    borderBottomWidth: 2,
     fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  flexRow: {
-    flexDirection: "row",
-  },
-  input: {
-    borderColor: "#4630eb",
-    borderRadius: 4,
-    borderWidth: 1,
-    flex: 1,
-    height: 48,
-    margin: 16,
-    padding: 8,
-  },
-  listArea: {
-    backgroundColor: "#f0f0f0",
-    flex: 1,
-    paddingTop: 16,
-  },
-  sectionContainer: {
-    marginBottom: 16,
-    marginHorizontal: 16,
-  },
-  sectionHeading: {
-    fontSize: 18,
-    marginBottom: 8,
   },
 });
