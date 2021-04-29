@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { FlatList, Text, TextInput } from "react-native";
+import { FlatList, Text, ScrollView } from "react-native";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import * as SQLite from "expo-sqlite";
 
@@ -42,12 +42,10 @@ export default function HomeS({ route, navigation }) {
       refreshNotes
     );
   }, []);
+
   useEffect(() => {
-    refreshNotes;
-    if (route.params?.text) {
-      if (route.params?.id) {
-        refreshNotes;
-      } else {
+    if (route.params?.id) {
+      if (route.params.id == -1) {
         db.transaction(
           (tx) => {
             tx.executeSql(
@@ -58,9 +56,20 @@ export default function HomeS({ route, navigation }) {
           null,
           refreshNotes
         );
+      } else {
+        db.transaction(
+          (tx) => {
+            tx.executeSql(
+              `UPDATE notes SET title = ?, content = ? WHERE id = ${route.params.id};`,
+              [route.params.text, route.params.content]
+            );
+          },
+          null,
+          refreshNotes
+        );
       }
     }
-  }, [route.params?.text]);
+  }, [route.params?.id, route.params?.content, route.params?.text]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -228,28 +237,31 @@ export default function HomeS({ route, navigation }) {
   }
 
   return (
-    <View style={[styles.container, { flex: 1 }]}>
-      <View style={[styles.container, { flex: 3 }]}>
-        <Text style={styles.labelText}>Current Todo List</Text>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { justifyContent: "flex-start" },
+      ]}
+    >
+      <View style={[styles.container]}>
         <FlatList
           style={styles.list}
           data={noteArray}
           renderItem={renderNoteItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
         />
       </View>
 
-      <View style={[styles.container, { flex: 2 }]}>
-        <Text style={styles.labelText}>Done Todo List</Text>
+      <View style={[styles.container]}>
         <FlatList
           style={styles.list}
           data={doneArray}
           renderItem={renderDoneItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
         />
       </View>
       <StatusBar style="auto" />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -295,11 +307,5 @@ const styles = StyleSheet.create({
     textAlign: "left",
     flex: 1,
     flexWrap: "wrap",
-  },
-
-  labelText: {
-    fontWeight: "bold",
-    color: "black",
-    fontSize: 30,
   },
 });

@@ -13,16 +13,12 @@ import * as SQLite from "expo-sqlite";
 const db = SQLite.openDatabase("notes.db");
 
 function updateNote({ note, text, content, navigation }) {
-  const id = "Edit";
+  const id = note.id;
   if (note.title != text || note.content != content) {
-    db.transaction((tx) => {
-      tx.executeSql(
-        `UPDATE notes SET title = ?, content = ? WHERE id = ${note.id}`,
-        [text, content]
-      );
-    });
+    navigation.navigate("HomeS", { text, content, id });
+  } else {
+    navigation.popToTop();
   }
-  navigation.navigate("HomeS", { text, content, id });
 }
 
 export default function DetailsS({ route, navigation }) {

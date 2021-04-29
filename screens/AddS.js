@@ -12,7 +12,7 @@ import {
 export default function AddS({ navigation }) {
   const [text, setText] = useState();
   const [content, setContent] = useState();
-  const id = "";
+  const [id, setId] = useState(-1);
   return (
     <View style={[styles.container]}>
       <Text style={styles.labelText}>Add your Todo</Text>
