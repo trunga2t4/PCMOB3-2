@@ -251,7 +251,6 @@ export default function HomeS({ route, navigation }) {
           keyExtractor={(item) => item.id.toString()}
         />
       </View>
-
       <View style={[styles.container]}>
         <FlatList
           style={styles.list}
