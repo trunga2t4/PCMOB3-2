@@ -8,43 +8,48 @@ import {
   TextInput,
   StyleSheet,
 } from "react-native";
+import * as SQLite from "expo-sqlite";
 
-export default function AddS({ navigation }) {
-  const [text, setText] = useState();
-  const [content, setContent] = useState();
-  const id = "";
+const db = SQLite.openDatabase("notes.db");
+
+function updateNote({ note, text, content, navigation }) {
+  const id = "Edit";
+  if (note.title != text || note.content != content) {
+    db.transaction((tx) => {
+      tx.executeSql(
+        `UPDATE notes SET title = ?, content = ? WHERE id = ${note.id}`,
+        [text, content]
+      );
+    });
+  }
+  navigation.navigate("HomeS", { text, content, id });
+}
+
+export default function DetailsS({ route, navigation }) {
+  const note = route.params;
+  const [text, setText] = useState(route.params.title);
+  const [content, setContent] = useState(route.params.content);
   return (
     <View style={[styles.container]}>
-      <Text style={styles.labelText}>Add your Todo</Text>
+      <Text style={styles.labelText}>To do list details</Text>
       <TextInput
-        placeholder="Add your task/note title here"
         style={styles.input}
+        value={text}
         onChangeText={(text) => setText(text)}
       />
       <TextInput
-        placeholder="Add your task/note detail here"
         multiline={true}
         style={styles.input2}
+        value={content}
         onChangeText={(content) => setContent(content)}
       />
-      <View
-        style={{
-          flexDirection: "row",
-        }}
+
+      <TouchableOpacity
+        onPress={() => updateNote({ note, text, content, navigation })}
+        style={[styles.submitButton]}
       >
-        <TouchableOpacity
-          onPress={() => navigation.navigate("HomeS", { text, content, id })}
-          style={[styles.submitButton]}
-        >
-          <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={[styles.dismissButton]}
-        >
-          <Text style={styles.buttonText}>Dismiss</Text>
-        </TouchableOpacity>
-      </View>
+        <Text style={styles.buttonText}>Submit</Text>
+      </TouchableOpacity>
     </View>
   );
 }
